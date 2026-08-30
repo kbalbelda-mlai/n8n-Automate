@@ -1,0 +1,27 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Local credentials and secrets
+credentials/
+secrets/
+*.key
+*.pem
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# IDE / editor files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*~
