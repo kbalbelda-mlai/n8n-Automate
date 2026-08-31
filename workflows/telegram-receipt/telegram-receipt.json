@@ -1,0 +1,1399 @@
+{
+  "name": "telegram-receipt",
+  "nodes": [
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.5,
+      "position": [
+        -704,
+        -176
+      ],
+      "id": "81fa1447-10b7-4818-a6fb-5b8d26c4bc7f",
+      "name": "telegram_trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "f7ab089a-b22d-4eaa-892d-b5bd6f8cb4b1",
+              "leftValue": "={{ !!($json.message?.photo?.length) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        -176
+      ],
+      "id": "bc655bb4-0df5-4366-bb06-e95137d72b1f",
+      "name": "if_photo_received?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d3a18e8a-ba7d-4d94-b804-c763e9d7b5eb",
+              "name": "submission_id",
+              "value": "={{ String($json.message.chat.id) + '_' + String($json.message.message_id) }}",
+              "type": "string"
+            },
+            {
+              "id": "d75d4293-72d5-421b-a868-51279f66a299",
+              "name": "submission_timestamp",
+              "value": "={{ DateTime.fromSeconds($json.message.date).setZone('Asia/Manila').toFormat('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "id": "99482251-5fbb-4d72-a4f8-9445150b9818",
+              "name": "submission_date",
+              "value": "={{ DateTime.fromSeconds($json.message.date).setZone('Asia/Manila').toFormat('yyyy-MM-dd') }}",
+              "type": "string"
+            },
+            {
+              "id": "899ddb00-0a76-4563-929f-d249e15828c3",
+              "name": "telegram_user",
+              "value": "={{ $json.message.from.username || [$json.message.from.first_name, $json.message.from.last_name].filter(Boolean).join(' ') }}",
+              "type": "string"
+            },
+            {
+              "id": "9c9c667d-cf7b-4b24-bf6d-b3d81e9798a2",
+              "name": "photo_file_id",
+              "value": "={{ $json.message.photo[$json.message.photo.length - 1].file_id }}",
+              "type": "string"
+            },
+            {
+              "id": "543e1124-38a2-44be-81a5-8fbb84a3e3f2",
+              "name": "photo_file_unique_id",
+              "value": "={{ $json.message.photo[$json.message.photo.length - 1].file_unique_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -224,
+        -176
+      ],
+      "id": "7aed784c-d028-4800-8000-f72e203c80e4",
+      "name": "normalize_telegram_submission"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('normalize_telegram_submission').item.json.photo_file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        -176
+      ],
+      "id": "88533ed5-87de-4f28-9b4b-18dcf37fb95d",
+      "name": "download_receipt_photo"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -224,
+        96
+      ],
+      "id": "fd60e842-9eb8-4767-b641-371bd3ea701f",
+      "name": "restore_telegram_context"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.6-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.6-flash"
+        },
+        "text": "={{ $json.receipt_prompt }}",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        -464,
+        496
+      ],
+      "id": "1690675c-1965-4a9b-b242-4695cef6351f",
+      "name": "gemini_analyze_image"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "receipt_extraction_prompt",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "",
+            "mode": "list",
+            "cachedResultName": "config"
+          },
+          "whatToSearch": "files"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        0,
+        96
+      ],
+      "id": "7d06d637-b31f-446d-a6dc-d13ac019e2e8",
+      "name": "search_receipt_prompt",
+      "executeOnce": false,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a2bbc0c4-216a-460b-b59c-acc9fc915139",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        224,
+        96
+      ],
+      "id": "db44f10f-4069-40c2-89ab-c6a330273b1f",
+      "name": "if_prompt_file_exists?"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "googleFileConversion": {
+            "conversion": {
+              "docsToFormat": "text/plain"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        448,
+        -48
+      ],
+      "id": "f708e1d1-48c2-43e1-85d7-c2448ff05ca0",
+      "name": "download_receipt_prompt"
+    },
+    {
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        -48
+      ],
+      "id": "d3559d56-dee0-4b04-945e-734e9b7fc91b",
+      "name": "extract_receipt_prompt"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1882fc33-c7d6-4455-bd5d-538f5113a845",
+              "name": "receipt_prompt",
+              "value": "={{ String($json.data ?? $json.text ?? $json.content ?? '').trim() }}",
+              "type": "string"
+            },
+            {
+              "id": "341087a5-9173-47af-ad4c-fcaad7baea7f",
+              "name": "prompt_source",
+              "value": "external",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        896,
+        -48
+      ],
+      "id": "dd9f2831-44d3-48d1-b859-f85736e7d2b7",
+      "name": "prepare_external_prompt"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "df423d68-4e7e-4d35-a927-c5a06b8fdb04",
+              "leftValue": "={{ !!$json.receipt_prompt?.trim() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1120,
+        -48
+      ],
+      "id": "d8348aa4-2f33-476e-88e8-fad0bab4dcb9",
+      "name": "if_prompt_nonempty?"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ea4940c4-2742-4112-98c8-c8e05fe24ca0",
+              "name": "receipt_prompt",
+              "value": "Analyze the supplied image as a possible Philippine sales receipt, official receipt, sales invoice, or transaction receipt.  Extract the information semantically rather than merely transcribing visible text.  Interpret common Philippine receipt terminology and equivalent labels. TOTAL, TOTAL DUE, AMOUNT DUE, GRAND TOTAL, NET TOTAL, and TOTAL SALES may represent the final transaction amount. Do not confuse the final total with CASH TENDERED, AMOUNT RECEIVED, CHANGE, SUBTOTAL, VATABLE SALES, VAT-EXEMPT SALES, or individual item prices.  Recognize common Philippine terminology including OR, OFFICIAL RECEIPT, SI, SALES INVOICE, INVOICE NO., RECEIPT NO., TRANSACTION NO., REFERENCE NO., TIN, VAT REG TIN, VATABLE SALES, VAT AMOUNT, 12% VAT, SENIOR CITIZEN DISCOUNT, PWD DISCOUNT, CASH, CREDIT CARD, DEBIT CARD, GCASH, MAYA, PHP, Php, P, and ₱.  Return ONLY valid JSON and no Markdown or explanatory text.  Use exactly this schema:  {   \"is_receipt\": true,   \"merchant_name\": null,   \"receipt_date\": null,   \"receipt_time\": null,   \"receipt_number\": null,   \"total_amount\": null,   \"currency\": null,   \"merchant_tin\": null,   \"merchant_address\": null,   \"vat_amount\": null,   \"discount_amount\": null,   \"payment_method\": null,   \"legibility\": \"clear\",   \"extraction_notes\": null }  Rules: 1. merchant_name identifies the business/store, not the cashier or customer. 2. receipt_date must use YYYY-MM-DD when reliably determined. 3. receipt_time should use HH:mm:ss when reliably determined. 4. total_amount must represent the final amount payable or paid. 5. Monetary values must be numbers only, without currency symbols or thousands separators. 6. currency should preferably use ISO codes such as PHP. 7. Do not invent information. Use null when a field cannot be determined reliably. 8. Set is_receipt to false when the image does not reasonably appear to be a receipt, invoice, or similar transaction document. 9. legibility must be exactly one of: \"clear\", \"partial\", or \"unreadable\". 10. Use extraction_notes only for significant ambiguity or poor image quality. Otherwise return null.",
+              "type": "string"
+            },
+            {
+              "id": "fa8da36d-e44a-4b9d-a84e-2fec1bd664d3",
+              "name": "prompt_source",
+              "value": "fallback",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        448,
+        256
+      ],
+      "id": "d3e6f84a-e8af-4dae-a1f9-d17fecee61d7",
+      "name": "use_default_prompt"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        672,
+        256
+      ],
+      "id": "b2818c90-8d96-41ac-92a0-69ee074888d9",
+      "name": "resolve_prompt"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -704,
+        496
+      ],
+      "id": "65d01edc-aa65-422a-8f3a-a5c93d5b01e3",
+      "name": "merge_prompt_context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map((item, index) => {\n  try {\n    // Locate Gemini's text response\n    const rawText =\n      item.json.content?.parts?.find(\n        part => typeof part.text === 'string'\n      )?.text ?? '';\n\n    // Be tolerant if Gemini ever adds Markdown fences\n    const cleanedText = rawText\n      .trim()\n      .replace(/^```(?:json)?\\s*/i, '')\n      .replace(/\\s*```$/i, '')\n      .trim();\n\n    if (!cleanedText) {\n      throw new Error('Gemini returned no receipt JSON text.');\n    }\n\n    const parsed = JSON.parse(cleanedText);\n\n    return {\n      json: {\n        parse_success: true,\n\n        is_receipt: parsed.is_receipt ?? false,\n        merchant_name: parsed.merchant_name ?? null,\n        receipt_date: parsed.receipt_date ?? null,\n        receipt_time: parsed.receipt_time ?? null,\n        receipt_number: parsed.receipt_number ?? null,\n        total_amount: parsed.total_amount ?? null,\n        currency: parsed.currency ?? null,\n        merchant_tin: parsed.merchant_tin ?? null,\n        merchant_address: parsed.merchant_address ?? null,\n        vat_amount: parsed.vat_amount ?? null,\n        discount_amount: parsed.discount_amount ?? null,\n        payment_method: parsed.payment_method ?? null,\n        legibility: parsed.legibility ?? 'unreadable',\n        extraction_notes: parsed.extraction_notes ?? null\n      },\n\n      pairedItem: {\n        item: index\n      }\n    };\n\n  } catch (error) {\n    return {\n      json: {\n        parse_success: false,\n\n        is_receipt: false,\n        merchant_name: null,\n        receipt_date: null,\n        receipt_time: null,\n        receipt_number: null,\n        total_amount: null,\n        currency: null,\n        merchant_tin: null,\n        merchant_address: null,\n        vat_amount: null,\n        discount_amount: null,\n        payment_method: null,\n        legibility: 'unreadable',\n        extraction_notes: `Gemini response could not be parsed: ${error.message}`\n      },\n\n      pairedItem: {\n        item: index\n      }\n    };\n  }\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        496
+      ],
+      "id": "f5f29bf1-568f-4435-a99c-b8c67ab4cb52",
+      "name": "parse_receipt_output"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -464,
+        720
+      ],
+      "id": "fdf36e42-787f-4862-93a6-a11305fce201",
+      "name": "restore_receipt_context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nreturn items.map((item, index) => {\n  const j = item.json;\n  const message = j.message ?? {};\n\n  // Helper: considers 0 a valid value, but null/undefined/blank invalid.\n  const isPresent = (value) => {\n    if (value === null || value === undefined) return false;\n    return String(value).trim() !== '';\n  };\n\n  // Employer-required core receipt fields.\n  const coreFields = {\n    merchant_name: j.merchant_name,\n    receipt_date: j.receipt_date,\n    total_amount: j.total_amount,\n  };\n\n  const coreFieldsFound = Object.values(coreFields)\n    .filter(isPresent)\n    .length;\n\n  let qualityStatus;\n\n  // Clearly unusable / invalid cases.\n  if (\n    j.parse_success !== true ||\n    j.is_receipt !== true ||\n    j.legibility === 'unreadable' ||\n    coreFieldsFound <= 1\n  ) {\n    qualityStatus = 'UNRECOGNIZABLE';\n  }\n\n  // Meaningful extraction exists, but something important is uncertain.\n  else if (\n    j.legibility === 'partial' ||\n    coreFieldsFound === 2\n  ) {\n    qualityStatus = 'REVIEW_REQUIRED';\n  }\n\n  // All core fields present and image judged clear.\n  else {\n    qualityStatus = 'SUCCESS';\n  }\n\n  // Telegram timestamp → Philippine local time.\n  // Philippines is UTC+8 and has no DST.\n  const telegramUnixSeconds = Number(message.date ?? 0);\n  const phDate = new Date((telegramUnixSeconds + (8 * 60 * 60)) * 1000);\n\n  const submissionTimestamp = phDate\n    .toISOString()\n    .slice(0, 19)\n    .replace('T', ' ');\n\n  const submissionDate = submissionTimestamp.slice(0, 10);\n\n  const chatId = message.chat?.id ?? '';\n  const messageId = message.message_id ?? '';\n\n  const submissionId =\n    `${String(chatId)}_${String(messageId)}`;\n\n  const telegramUser =\n    message.from?.username ||\n    [message.from?.first_name, message.from?.last_name]\n      .filter(Boolean)\n      .join(' ') ||\n    String(chatId);\n\n  // Telegram photos do not have a meaningful original filename,\n  // so create a deterministic unique storage name.\n  const driveFileName =\n    `receipt_${submissionId}.jpg`;\n\n  return {\n    json: {\n      // Submission metadata\n      submission_id: submissionId,\n      submission_timestamp: submissionTimestamp,\n      submission_date: submissionDate,\n      telegram_user: telegramUser,\n      telegram_chat_id: chatId,\n\n      // Extracted receipt fields\n      merchant_name: j.merchant_name ?? null,\n      receipt_date: j.receipt_date ?? null,\n      receipt_time: j.receipt_time ?? null,\n      receipt_number: j.receipt_number ?? null,\n      total_amount: j.total_amount ?? null,\n      currency: j.currency ?? null,\n      merchant_tin: j.merchant_tin ?? null,\n      merchant_address: j.merchant_address ?? null,\n      vat_amount: j.vat_amount ?? null,\n      discount_amount: j.discount_amount ?? null,\n      payment_method: j.payment_method ?? null,\n\n      // Quality / audit information\n      parse_success: j.parse_success === true,\n      is_receipt: j.is_receipt === true,\n      legibility: j.legibility ?? 'unreadable',\n      extraction_notes: j.extraction_notes ?? null,\n      core_fields_found: coreFieldsFound,\n      quality_status: qualityStatus,\n      prompt_source: j.prompt_source ?? 'unknown',\n\n      // Storage fields used later\n      drive_file_name: driveFileName,\n      drive_file: '',\n\n      // Will be finalized after Drive + Sheets processing\n      processing_status: 'EXTRACTED'\n    },\n\n    // Preserve original Telegram receipt photo\n    binary: item.binary,\n\n    pairedItem: {\n      item: index\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        720
+      ],
+      "id": "e50d847c-1df0-4765-8735-6ebe47505d0c",
+      "name": "assess_receipt_quality"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.submission_date }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "",
+            "mode": "list",
+            "cachedResultName": "receipts"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -16,
+        720
+      ],
+      "id": "7bcfca15-67a4-415a-aaa0-5e4a0ea72570",
+      "name": "search_submission_date_folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "80acda2d-9a60-4f68-a694-5273873913bd",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        208,
+        720
+      ],
+      "id": "032e0b4b-be53-48a4-833d-36850a67925f",
+      "name": "if_submission_date_folder_exists?"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('assess_receipt_quality').item.json.submission_date }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "receipts"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        432,
+        736
+      ],
+      "id": "06b12199-31fa-4649-b4ba-c04d43c353eb",
+      "name": "create_submission_date_folder"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "91b3e871-6edf-4a72-a6af-3ac12aca3a02",
+              "name": "submission_date_folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "7135dd77-c5cc-4c82-8b5b-28e798c61b64",
+              "name": "submission_date_folder_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        496
+      ],
+      "id": "bd059fe5-200e-40e5-bea7-9476a88cd2b1",
+      "name": "capture_submission_date_folder"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        928,
+        576
+      ],
+      "id": "39d53cd1-466b-4824-af35-b835da0ebad9",
+      "name": "restore_storage_context"
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.drive_file_name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.submission_date_folder_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        1152,
+        576
+      ],
+      "id": "c8999a7e-2d72-4958-a9af-d6b28e7e5e98",
+      "name": "upload_original_receipt"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e94daf70-caac-4ae5-b7ee-5b2b5330741d",
+              "name": "drive_file_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "efc14de2-e7ed-464f-ac81-e7918dc76985",
+              "name": "upload_file_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "101c27d6-4b67-489f-8add-eb0b030f6ee1",
+              "name": "drive_file_link",
+              "value": "={{ $json.webViewLink || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        672,
+        848
+      ],
+      "id": "d4b9c2f1-246f-4455-b1b3-64f063d879d8",
+      "name": "capture_uploaded_receipt"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        912,
+        848
+      ],
+      "id": "62946765-8fb1-4ba0-a90b-316477c8f125",
+      "name": "restore_final_record"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "af5ebf0d-664e-4899-8e21-eb03a4286d4d",
+              "name": "submission_id",
+              "value": "={{ $('assess_receipt_quality').item.json.submission_id }}",
+              "type": "string"
+            },
+            {
+              "id": "7ecb6a6c-a38a-4011-a123-bfa602e44792",
+              "name": "submission_timestamp",
+              "value": "={{ $('assess_receipt_quality').item.json.submission_timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "f00ae044-f37f-469e-b544-1f2e65f77a09",
+              "name": "telegram_user",
+              "value": "={{ $('assess_receipt_quality').item.json.telegram_user }}",
+              "type": "string"
+            },
+            {
+              "id": "dc0345ff-418a-4e23-9cc7-ef03dcd1591c",
+              "name": "merchant_name",
+              "value": "={{ $('assess_receipt_quality').item.json.merchant_name ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "1d552aa9-cdb5-47e0-bf9c-8d7b52dc8712",
+              "name": "receipt_date",
+              "value": "={{ $('assess_receipt_quality').item.json.receipt_date ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "3c6ff2a3-2a70-4e4c-8cb4-ff8b09402735",
+              "name": "receipt_time",
+              "value": "={{ $('assess_receipt_quality').item.json.receipt_time ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "01789f2d-57e6-4e25-89a7-e193acc1a2fe",
+              "name": "receipt_number",
+              "value": "={{ $('assess_receipt_quality').item.json.receipt_number ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "fa430c65-c6ab-4f61-a856-ceaf7e92197a",
+              "name": "total_amount",
+              "value": "={{ $('assess_receipt_quality').item.json.total_amount ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "08cccf73-f278-4bcc-81f7-0767a66f6374",
+              "name": "currency",
+              "value": "={{ $('assess_receipt_quality').item.json.currency ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "eb930f40-cc16-4519-ae5a-610e9fe527ee",
+              "name": "merchant_tin",
+              "value": "={{ $('assess_receipt_quality').item.json.merchant_tin ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "535fd6b6-f7f7-4d84-a7f1-ab07ead13036",
+              "name": "merchant_address",
+              "value": "={{ $('assess_receipt_quality').item.json.merchant_address ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "3e4c73a7-3022-4f04-81f3-b7ad47e59a53",
+              "name": "vat_amount",
+              "value": "={{ $('assess_receipt_quality').item.json.vat_amount ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "bda1ea16-11a7-4027-ac82-e59c1dc6109a",
+              "name": "discount_amount",
+              "value": "={{ $('assess_receipt_quality').item.json.discount_amount ?? 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "3202a254-3113-4bff-a6df-79fe17794619",
+              "name": "payment_method",
+              "value": "={{ $('assess_receipt_quality').item.json.payment_method ?? '' }}",
+              "type": "string"
+            },
+            {
+              "id": "76a22866-2b26-4036-99d5-66c3a1ae7418",
+              "name": "drive_file",
+              "value": "={{    'receipts/' +   $('assess_receipt_quality').item.json.submission_date +   '/' +   $('assess_receipt_quality').item.json.drive_file_name }}",
+              "type": "string"
+            },
+            {
+              "id": "7c3f3b47-e314-4b3b-b644-cffa74862645",
+              "name": "quality_status",
+              "value": "={{ $('assess_receipt_quality').item.json.quality_status }}",
+              "type": "string"
+            },
+            {
+              "id": "1d9ab774-4f67-4afe-99c2-1d621a9a8967",
+              "name": "processing_status",
+              "value": "COMPLETED",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1136,
+        848
+      ],
+      "id": "b2f3b205-771d-4e2b-b907-da86317f0d2d",
+      "name": "prepare_final_record"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Receipt_log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Receipt_Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "submission_id": "={{ $json.submission_id }}",
+            "submission_timestamp": "={{ $json.submission_timestamp }}",
+            "telegram_user": "={{ $json.telegram_user }}",
+            "merchant_name": "={{ $json.merchant_name }}",
+            "receipt_date": "={{ $json.receipt_date }}",
+            "receipt_time": "={{ $json.receipt_time }}",
+            "receipt_number": "={{ $json.receipt_number }}",
+            "total_amount": "={{ $json.total_amount }}",
+            "currency": "={{ $json.currency }}",
+            "merchant_tin": "={{ $json.merchant_tin }}",
+            "merchant_address": "={{ $json.merchant_address }}",
+            "vat_amount": "={{ $json.vat_amount }}",
+            "discount_amount": "={{ $json.discount_amount }}",
+            "payment_method": "={{ $json.payment_method }}",
+            "drive_file": "={{ $json.drive_file }}",
+            "quality_status": "={{ $json.quality_status }}",
+            "processing_status": "={{ $json.processing_status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "submission_id",
+              "displayName": "submission_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "submission_timestamp",
+              "displayName": "submission_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "telegram_user",
+              "displayName": "telegram_user",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "merchant_name",
+              "displayName": "merchant_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "receipt_date",
+              "displayName": "receipt_date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "receipt_time",
+              "displayName": "receipt_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "receipt_number",
+              "displayName": "receipt_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "total_amount",
+              "displayName": "total_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "currency",
+              "displayName": "currency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "merchant_tin",
+              "displayName": "merchant_tin",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "merchant_address",
+              "displayName": "merchant_address",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "vat_amount",
+              "displayName": "vat_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "discount_amount",
+              "displayName": "discount_amount",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "payment_method",
+              "displayName": "payment_method",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drive_file",
+              "displayName": "drive_file",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "quality_status",
+              "displayName": "quality_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processing_status",
+              "displayName": "processing_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1360,
+        848
+      ],
+      "id": "3697a95e-eb6b-4c35-9da1-5a91c46354ca",
+      "name": "log_receipt_to_sheet"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Receipt_log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Receipt_Log"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "submission_id",
+              "lookupValue": "={{ $('normalize_telegram_submission').item.json.submission_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        0,
+        -384
+      ],
+      "id": "c0b0f834-9a9b-4c69-a288-287ec46556cf",
+      "name": "check_submission_already_logged",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "42041e24-8250-481f-b4fd-856826fb6ec6",
+              "leftValue": "={{ !!$json.submission_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        416,
+        -384
+      ],
+      "id": "4e1844c3-1b21-461e-b6f3-6221a26e6f00",
+      "name": "if_submission_already_processed?"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "telegram_trigger": {
+      "main": [
+        [
+          {
+            "node": "if_photo_received?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "restore_telegram_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "if_photo_received?": {
+      "main": [
+        [
+          {
+            "node": "normalize_telegram_submission",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalize_telegram_submission": {
+      "main": [
+        [
+          {
+            "node": "check_submission_already_logged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download_receipt_photo": {
+      "main": [
+        [
+          {
+            "node": "restore_telegram_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_telegram_context": {
+      "main": [
+        [
+          {
+            "node": "search_receipt_prompt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "merge_prompt_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "search_receipt_prompt": {
+      "main": [
+        [
+          {
+            "node": "if_prompt_file_exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_prompt_file_exists?": {
+      "main": [
+        [
+          {
+            "node": "download_receipt_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use_default_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "download_receipt_prompt": {
+      "main": [
+        [
+          {
+            "node": "extract_receipt_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract_receipt_prompt": {
+      "main": [
+        [
+          {
+            "node": "prepare_external_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_external_prompt": {
+      "main": [
+        [
+          {
+            "node": "if_prompt_nonempty?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_prompt_nonempty?": {
+      "main": [
+        [
+          {
+            "node": "resolve_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "use_default_prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "use_default_prompt": {
+      "main": [
+        [
+          {
+            "node": "resolve_prompt",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "resolve_prompt": {
+      "main": [
+        [
+          {
+            "node": "merge_prompt_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge_prompt_context": {
+      "main": [
+        [
+          {
+            "node": "gemini_analyze_image",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "restore_receipt_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "gemini_analyze_image": {
+      "main": [
+        [
+          {
+            "node": "parse_receipt_output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "parse_receipt_output": {
+      "main": [
+        [
+          {
+            "node": "restore_receipt_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_receipt_context": {
+      "main": [
+        [
+          {
+            "node": "assess_receipt_quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "assess_receipt_quality": {
+      "main": [
+        [
+          {
+            "node": "search_submission_date_folder",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "restore_storage_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "search_submission_date_folder": {
+      "main": [
+        [
+          {
+            "node": "if_submission_date_folder_exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_submission_date_folder_exists?": {
+      "main": [
+        [
+          {
+            "node": "capture_submission_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_submission_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_submission_date_folder": {
+      "main": [
+        [
+          {
+            "node": "capture_submission_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "capture_submission_date_folder": {
+      "main": [
+        [
+          {
+            "node": "restore_storage_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_storage_context": {
+      "main": [
+        [
+          {
+            "node": "upload_original_receipt",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "restore_final_record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_original_receipt": {
+      "main": [
+        [
+          {
+            "node": "capture_uploaded_receipt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "capture_uploaded_receipt": {
+      "main": [
+        [
+          {
+            "node": "restore_final_record",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "restore_final_record": {
+      "main": [
+        [
+          {
+            "node": "prepare_final_record",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare_final_record": {
+      "main": [
+        [
+          {
+            "node": "log_receipt_to_sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "log_receipt_to_sheet": {
+      "main": [
+        []
+      ]
+    },
+    "check_submission_already_logged": {
+      "main": [
+        [
+          {
+            "node": "if_submission_already_processed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_submission_already_processed?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "download_receipt_photo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}

@@ -1,0 +1,1273 @@
+{
+  "name": "gmail-multilabel",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 5,
+              "unit": "minutes"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "q": "{label:n8n-testing_label01 label:n8n-testing_label02 label:n8n-testing_label03 label:n8n-testing_label04}",
+          "readStatus": "both"
+        },
+        "options": {
+          "dataPropertyAttachmentsPrefixName": "attachment_",
+          "downloadAttachments": true
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -1072,
+        -480
+      ],
+      "id": "cfe1af42-4938-440f-9bee-bcbd8e2faf75",
+      "name": "Gmail[Trigger] - n8n-Automate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5aa443f8-9d6e-4bbe-983f-1b53fde2808d",
+              "name": "message_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            },
+            {
+              "id": "956986c3-3aaf-417f-a5da-1914b4961184",
+              "name": "received_timestamp",
+              "value": "={{ DateTime.fromISO($json.date).setZone('Asia/Manila').toFormat('yyyy-MM-dd HH:mm:ss') }}",
+              "type": "string"
+            },
+            {
+              "id": "567d04d9-a685-4ed6-9e82-f265966827cf",
+              "name": "sender_name",
+              "value": "={{ $json.from?.value?.[0]?.name || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "b44f208d-5b3d-4924-84b6-d8df2e5d3cfa",
+              "name": "sender_email",
+              "value": "={{ $json.from?.value?.[0]?.address || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "2d297c21-65f4-43b1-b4b4-79dee7892db0",
+              "name": "subject",
+              "value": "={{ $json.subject || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "e4e0a67c-f161-4c7d-824c-f342e2cbb861",
+              "name": "matched_label",
+              "value": "={{ \n  ($json.labelIds || [])\n    .map(id => ({\n      'Label_REPLACE_WITH_LABEL01_ID': 'n8n-testing_label01',\n      'Label_REPLACE_WITH_LABEL02_ID': 'n8n-testing_label02',\n      'Label_REPLACE_WITH_LABEL03_ID': 'n8n-testing_label03',\n      'Label_REPLACE_WITH_LABEL04_ID': 'n8n-testing_label04'\n    }[id]))\n    .filter(Boolean)\n    .join(', ')\n}}",
+              "type": "string"
+            },
+            {
+              "id": "821c9015-f8d9-49c6-90f1-d0fb93ef3189",
+              "name": "processing_status",
+              "value": "RECEIVED",
+              "type": "string"
+            },
+            {
+              "id": "5fcf733e-ee26-4ba0-bdf4-f75bbfd4039c",
+              "name": "has_attachment",
+              "value": "={{ Object.keys($binary ?? {}).filter(key => key.startsWith('attachment_')).length > 0 }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5169cd9f-ce57-4b36-b9d2-15e244d77b5e",
+              "name": "attachment_count",
+              "value": "={{ Object.keys($binary ?? {}).filter(key => key.startsWith('attachment_')).length }}",
+              "type": "number"
+            },
+            {
+              "id": "42f5f415-0e8d-408e-a411-54add1dfd0a0",
+              "name": "drive_folder",
+              "value": "={{ '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -848,
+        -480
+      ],
+      "id": "2c750447-e104-4a03-8130-1a2f3c9415a3",
+      "name": "normalize_email_metadata"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Email_log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Email_Log"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message_id": "={{ $json.message_id }}",
+            "received_timestamp": "={{ $json.received_timestamp }}",
+            "sender_name": "={{ $json.sender_name }}",
+            "sender_email": "={{ $json.sender_email }}",
+            "subject": "={{ $json.subject }}",
+            "matched_label": "={{ $json.matched_label }}",
+            "has_attachment": "={{ $json.has_attachment }}",
+            "attachment_count": "={{ $json.attachment_count }}",
+            "processing_status": "={{ $json.processing_status }}",
+            "drive_folder": "={{ $json.drive_folder }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "message_id",
+              "displayName": "message_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "received_timestamp",
+              "displayName": "received_timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sender_name",
+              "displayName": "sender_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "sender_email",
+              "displayName": "sender_email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "subject",
+              "displayName": "subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "matched_label",
+              "displayName": "matched_label",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "has_attachment",
+              "displayName": "has_attachment",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "attachment_count",
+              "displayName": "attachment_count",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "drive_folder",
+              "displayName": "drive_folder",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "processing_status",
+              "displayName": "processing_status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        592,
+        304
+      ],
+      "id": "84d99a81-9abb-401d-9220-48caf3ff33e0",
+      "name": "log_email_to_sheet"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "4e1f9d19-5952-461e-8fc4-31b932edaadb",
+              "leftValue": "={{ $json.has_attachment }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        0,
+        -480
+      ],
+      "id": "2a238677-691e-4f04-bd80-80094929e8ff",
+      "name": "if_has_attachments?"
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst output = [];\n\nfor (let itemIndex = 0; itemIndex < items.length; itemIndex++) {\n  const item = items[itemIndex];\n  const binary = item.binary ?? {};\n\n  // Existing names already stored in this sender folder.\n  // Use lowercase comparisons to avoid visually confusing\n  // collisions such as Sample.pdf vs sample.pdf.\n  const usedNames = new Set(\n    (item.json.existing_file_names ?? [])\n      .map(name => String(name).toLowerCase())\n  );\n\n  const attachmentKeys = Object.keys(binary)\n    .filter(key => key.startsWith('attachment_'))\n    .sort((a, b) => {\n      const aIndex = Number(a.replace('attachment_', ''));\n      const bIndex = Number(b.replace('attachment_', ''));\n      return aIndex - bIndex;\n    });\n\n  for (\n    let attachmentIndex = 0;\n    attachmentIndex < attachmentKeys.length;\n    attachmentIndex++\n  ) {\n    const attachmentKey = attachmentKeys[attachmentIndex];\n    const file = binary[attachmentKey];\n\n    const originalFileName = file.fileName ?? attachmentKey;\n\n    // Separate filename stem and extension.\n    const lastDot = originalFileName.lastIndexOf('.');\n    const hasExtension = lastDot > 0;\n\n    const baseName = hasExtension\n      ? originalFileName.slice(0, lastDot)\n      : originalFileName;\n\n    const extension = hasExtension\n      ? originalFileName.slice(lastDot)\n      : '';\n\n    let storedFileName = originalFileName;\n    let suffix = 2;\n\n    // If the name already exists, generate _2, _3, _4, ...\n    while (usedNames.has(storedFileName.toLowerCase())) {\n      storedFileName = `${baseName}_${suffix}${extension}`;\n      suffix++;\n    }\n\n    // Reserve the selected name so two attachments in the\n    // SAME email also can't receive the same final filename.\n    usedNames.add(storedFileName.toLowerCase());\n\n    output.push({\n      json: {\n        message_id: item.json.message_id,\n        received_timestamp: item.json.received_timestamp,\n        sender_name: item.json.sender_name,\n        sender_email: item.json.sender_email,\n        subject: item.json.subject,\n        matched_label: item.json.matched_label,\n        has_attachment: item.json.has_attachment,\n        attachment_count: item.json.attachment_count,\n\n        sender_folder_id: item.json.sender_folder_id,\n\n        drive_folder:\n          `attachments/${item.json.matched_label}/${item.json.received_timestamp.slice(0, 10)}/${item.json.sender_name}`,\n\n        processing_status: item.json.processing_status,\n\n        attachment_index: attachmentIndex,\n        attachment_key: attachmentKey,\n\n        original_file_name: originalFileName,\n        file_name: storedFileName,\n\n        mime_type: file.mimeType ?? '',\n        file_extension: file.fileExtension ?? '',\n        file_size: file.fileSize ?? null\n      },\n\n      binary: {\n        data: file\n      },\n\n      pairedItem: {\n        item: itemIndex\n      }\n    });\n  }\n}\n\nreturn output;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        160
+      ],
+      "id": "b4bc47c2-931b-46e0-b211-8a77ce43cafa",
+      "name": "split_attachments"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $json.matched_label }}",
+        "limit": 1,
+        "filter": {
+          "driveId": {
+            "mode": "list",
+            "value": "My Drive"
+          },
+          "folderId": {
+            "__rl": true,
+            "value": "",
+            "mode": "list",
+            "cachedResultName": "attachments"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        192,
+        -480
+      ],
+      "id": "2ed39611-622e-4890-a043-71901b2fe46a",
+      "name": "searhc_label_folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "258d1d16-fb63-4c75-a833-3904987958ec",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        368,
+        -480
+      ],
+      "id": "989f8343-96c3-413f-bb24-abbfb999ab06",
+      "name": "if_label_folder_exists?"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('loop_email_batch').item.json.matched_label }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "attachments"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        592,
+        -416
+      ],
+      "id": "3941452e-8861-41ea-90b3-283c173b7688",
+      "name": "create_label_folder"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('loop_email_batch').item.json.received_timestamp.slice(0, 10) }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.label_folder_id }}"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        976,
+        -480
+      ],
+      "id": "5bb38f17-d407-4501-a9a9-1e060735fbab",
+      "name": "search_date_folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d4ad8e3f-7f12-44c6-9202-1ee359f8dafd",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1072,
+        -160
+      ],
+      "id": "b67cc4c3-65d1-44d8-a5a3-7fc40c1bda9f",
+      "name": "if_date_folder_exists?"
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('loop_email_batch').item.json.received_timestamp.slice(0, 10) }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('capture_label_folder').item.json.label_folder_id }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -832,
+        -64
+      ],
+      "id": "a4c54841-d81e-4e1f-a71c-363748b9a047",
+      "name": "create_date_folder"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "queryString": "={{ $('loop_email_batch').item.json.sender_name }}",
+        "limit": 1,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "={{ $json.date_folder_id }}"
+          },
+          "whatToSearch": "folders"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -384,
+        -160
+      ],
+      "id": "b243d487-cf54-4541-8fc1-aed629a60355",
+      "name": "search_sender_folder",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "83e4ffb1-6050-44c5-b793-820a6ae842e2",
+              "leftValue": "={{ !!$json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -160,
+        -160
+      ],
+      "id": "99bcf153-16fd-4e9f-a104-187b1e4c9873",
+      "name": "if_sender_folder_exists?",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "resource": "folder",
+        "name": "={{ $('loop_email_batch').item.json.sender_name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "={{ $('capture_date_folder').item.json.date_folder_id }}"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        64,
+        -64
+      ],
+      "id": "9db74bdb-6cd1-4348-bd62-6151744cfc6f",
+      "name": "create_sender_folder"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "056e21f5-de8b-41f6-a79b-939fa8b7026d",
+              "name": "sender_folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        496,
+        -160
+      ],
+      "id": "7d1009c7-4ace-440f-ad2f-d95e19dc5aca",
+      "name": "capture_sender_folder"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -832,
+        160
+      ],
+      "id": "61ad622b-f07e-409c-b3c8-f5071998f5a9",
+      "name": "restore_email_context"
+    },
+    {
+      "parameters": {
+        "name": "={{ $json.file_name }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "={{ $json.sender_folder_id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        64,
+        160
+      ],
+      "id": "a2d08aea-2075-4e35-878a-77e4f52613ab",
+      "name": "upload_attachment"
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "searchMethod": "query",
+        "queryString": "={{ \"'\" + $json.sender_folder_id + \"' in parents and trashed = false\" }}",
+        "returnAll": true,
+        "filter": {
+          "whatToSearch": "files"
+        },
+        "options": {
+          "fields": [
+            "id",
+            "name"
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -608,
+        160
+      ],
+      "id": "452ad617-1e99-42d8-a1e4-f18f2ebc633c",
+      "name": "search_existing_sender_files",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const names = $input.all()\n  .map(item => item.json.name)\n  .filter(name => typeof name === 'string' && name.trim() !== '');\n\nreturn [\n  {\n    json: {\n      existing_file_names: names\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -384,
+        256
+      ],
+      "id": "11803fc2-4fcc-42f4-aef7-543317c416df",
+      "name": "collect_existing_filenames"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -384,
+        96
+      ],
+      "id": "a11c38e8-b541-4cbc-b4ec-ff10ed7d9b35",
+      "name": "merge_existing_file_context"
+    },
+    {
+      "parameters": {
+        "jsCode": "const uploads = $input.all();\nconst sourceItems = $('split_attachments').all();\n\nif (sourceItems.length === 0) {\n  return [];\n}\n\nconst email = sourceItems[0].json;\n\nreturn [\n  {\n    json: {\n      message_id: email.message_id,\n      received_timestamp: email.received_timestamp,\n      sender_name: email.sender_name,\n      sender_email: email.sender_email,\n      subject: email.subject,\n      matched_label: email.matched_label,\n      has_attachment: true,\n      attachment_count: email.attachment_count,\n      drive_folder: email.drive_folder,\n      processing_status: 'ATTACHMENTS_SAVED'\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        272,
+        96
+      ],
+      "id": "ea235ab6-50ba-4b75-91b2-7b9eef99a0ce",
+      "name": "summarize_attachment_uploads"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dd389aa4-7951-483c-9700-90db68d39def",
+              "name": "message_id",
+              "value": "={{ $json.message_id }}",
+              "type": "string"
+            },
+            {
+              "id": "62f97136-8280-4dc4-a7d0-68a03478e2fa",
+              "name": "received_timestamp",
+              "value": "={{ $json.received_timestamp }}",
+              "type": "string"
+            },
+            {
+              "id": "e449a943-cc9d-4369-b2c2-d16177eacb41",
+              "name": "sender_name",
+              "value": "={{ $json.sender_name }}",
+              "type": "string"
+            },
+            {
+              "id": "04fceb6c-96d7-4b97-b0d8-0d5e65f85347",
+              "name": "sender_email",
+              "value": "={{ $json.sender_email }}",
+              "type": "string"
+            },
+            {
+              "id": "815e595e-02ab-4ae0-8d4a-f9d00a87990f",
+              "name": "subject",
+              "value": "={{ $json.subject }}",
+              "type": "string"
+            },
+            {
+              "id": "4b551a4e-b7ca-49a5-9217-83ae822be91f",
+              "name": "matched_label",
+              "value": "={{ $json.matched_label }}",
+              "type": "string"
+            },
+            {
+              "id": "e04e9d0e-7241-474b-8413-6247ef3a48c0",
+              "name": "has_attachment",
+              "value": false,
+              "type": "boolean"
+            },
+            {
+              "id": "71e908f8-c951-444a-89a9-c4b0f3050295",
+              "name": "attachment_count",
+              "value": 0,
+              "type": "number"
+            },
+            {
+              "id": "63dc0530-cbec-4a20-abb7-813d103addc6",
+              "name": "drive_folder",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "60276fab-010d-46cd-adba-7cef17255cfd",
+              "name": "processing_status",
+              "value": "NO_ATTACHMENT",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        272,
+        256
+      ],
+      "id": "8784a7eb-5a55-4605-8327-393629a96d5f",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Email_log"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Email_Log"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "message_id",
+              "lookupValue": "={{ $json.message_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -624,
+        -480
+      ],
+      "id": "030f16b4-55fb-4356-9165-02cef6db3f04",
+      "name": "check_message_already_logged",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "80df5773-5c6d-4222-bbf3-c988b8022a85",
+              "leftValue": "={{ !!$json.message_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -384,
+        -544
+      ],
+      "id": "9bb55dc7-0417-48d2-aa12-823f4b8b47ec",
+      "name": "if_message_already_processed?"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -192,
+        -448
+      ],
+      "id": "e776fe80-0317-4914-8778-cf21dd768e50",
+      "name": "restore_unprocessed_email"
+    },
+    {
+      "parameters": {
+        "options": {},
+        "batchSize": 1
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -848,
+        -640
+      ],
+      "id": "292dcd2b-517d-4d99-b1c9-b08c62c6f925",
+      "name": "loop_email_batch"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1fb332da-e276-495b-b811-7a6faf584d67",
+              "name": "label_folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        800,
+        -480
+      ],
+      "id": "e0c812b8-c5d3-4946-8e55-10ccedbff085",
+      "name": "capture_label_folder"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b5a4bf44-ba7a-4d7f-8944-376fbd4e30bc",
+              "name": "date_folder_id",
+              "value": "={{ $json.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -608,
+        -160
+      ],
+      "id": "477c3654-78a9-4e75-ac2b-1e9b5c3596eb",
+      "name": "capture_date_folder"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail[Trigger] - n8n-Automate": {
+      "main": [
+        [
+          {
+            "node": "normalize_email_metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "normalize_email_metadata": {
+      "main": [
+        [
+          {
+            "node": "loop_email_batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_has_attachments?": {
+      "main": [
+        [
+          {
+            "node": "searhc_label_folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "searhc_label_folder": {
+      "main": [
+        [
+          {
+            "node": "if_label_folder_exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_label_folder_exists?": {
+      "main": [
+        [
+          {
+            "node": "capture_label_folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_label_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_label_folder": {
+      "main": [
+        [
+          {
+            "node": "capture_label_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_date_folder": {
+      "main": [
+        [
+          {
+            "node": "if_date_folder_exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_date_folder_exists?": {
+      "main": [
+        [
+          {
+            "node": "capture_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_date_folder": {
+      "main": [
+        [
+          {
+            "node": "capture_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_sender_folder": {
+      "main": [
+        [
+          {
+            "node": "if_sender_folder_exists?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_sender_folder_exists?": {
+      "main": [
+        [
+          {
+            "node": "capture_sender_folder",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "create_sender_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "create_sender_folder": {
+      "main": [
+        [
+          {
+            "node": "capture_sender_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "capture_sender_folder": {
+      "main": [
+        [
+          {
+            "node": "restore_email_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_email_context": {
+      "main": [
+        [
+          {
+            "node": "search_existing_sender_files",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "merge_existing_file_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "split_attachments": {
+      "main": [
+        [
+          {
+            "node": "upload_attachment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "search_existing_sender_files": {
+      "main": [
+        [
+          {
+            "node": "collect_existing_filenames",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect_existing_filenames": {
+      "main": [
+        [
+          {
+            "node": "merge_existing_file_context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "merge_existing_file_context": {
+      "main": [
+        [
+          {
+            "node": "split_attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "upload_attachment": {
+      "main": [
+        [
+          {
+            "node": "summarize_attachment_uploads",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "summarize_attachment_uploads": {
+      "main": [
+        [
+          {
+            "node": "log_email_to_sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "log_email_to_sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check_message_already_logged": {
+      "main": [
+        [
+          {
+            "node": "if_message_already_processed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if_message_already_processed?": {
+      "main": [
+        [
+          {
+            "node": "loop_email_batch",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "restore_unprocessed_email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "restore_unprocessed_email": {
+      "main": [
+        [
+          {
+            "node": "if_has_attachments?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "loop_email_batch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "check_message_already_logged",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "restore_unprocessed_email",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "restore_email_context",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "log_email_to_sheet": {
+      "main": [
+        [
+          {
+            "node": "loop_email_batch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "capture_label_folder": {
+      "main": [
+        [
+          {
+            "node": "search_date_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "capture_date_folder": {
+      "main": [
+        [
+          {
+            "node": "search_sender_folder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": [],
+  "tags": []
+}
